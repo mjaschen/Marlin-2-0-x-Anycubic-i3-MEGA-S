@@ -2805,7 +2805,7 @@
 
 // Play a (non-earpiercing) startup chime on startup/serial connection
 // of the Trigorilla board
-#define STARTUP_CHIME
+//#define STARTUP_CHIME
 
 //
 // ENDSTOP BEEP
