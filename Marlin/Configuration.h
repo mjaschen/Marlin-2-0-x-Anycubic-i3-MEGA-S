@@ -1694,13 +1694,15 @@
     // Invert the stepper direction. Change (or reverse the motor connector) if an axis goes the wrong way.
     #define INVERT_X_DIR false // set to true for stock drivers or TMC2208 with reversed connectors
     #define INVERT_Y_DIR true // set to false for stock drivers or TMC2208 with reversed connectors
-    #define INVERT_Z_DIR false // set to false for stock drivers or TMC2208 with reversed connectors
+    // [mjaschen] 2022-01-29 13:19:46 Set to true (changed driver to TMC2208 and original connector)
+    #define INVERT_Z_DIR true // set to false for stock drivers or TMC2208 with reversed connectors
 
     // @section extruder
 
     // For direct drive extruder v9 set to true, for geared extruder set to false.
     #if ENABLED(KNUTWURST_BMG)
-      #define INVERT_E0_DIR false // set to false for stock drivers or TMC2208 with reversed connectors
+      // [mjaschen] 2022-01-29 13:19:46 Set to true (changed driver to TMC2208 and original connector)
+      #define INVERT_E0_DIR true // set to false for stock drivers or TMC2208 with reversed connectors
     #else
       #define INVERT_E0_DIR true // set to false for stock drivers or TMC2208 with reversed connectors
     #endif
