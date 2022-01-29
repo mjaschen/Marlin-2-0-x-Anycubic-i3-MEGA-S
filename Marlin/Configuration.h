@@ -582,9 +582,9 @@
  *
  */
 #if ENABLED(KNUTWURST_4MAXP2)
-  #define TEMP_SENSOR_0 1
+  #define TEMP_SENSOR_0 11
 #else
-  #define TEMP_SENSOR_0 5
+  #define TEMP_SENSOR_0 1
 #endif
 #define TEMP_SENSOR_1 0
 #define TEMP_SENSOR_2 0
@@ -593,7 +593,7 @@
 #define TEMP_SENSOR_5 0
 #define TEMP_SENSOR_6 0
 #define TEMP_SENSOR_7 0
-#if ENABLED(KNUTWURST_4MAXP2) // 4MAX has type 1
+#if ENABLED(KNUTWURST_4MAXP2)
   #define TEMP_SENSOR_BED 5
 #else
   #define TEMP_SENSOR_BED 1
@@ -696,9 +696,9 @@
                                   // Set/get with gcode: M301 E[extruder number, 0-2]
 
   #if ANY(KNUTWURST_MEGA, KNUTWURST_MEGA_S, KNUTWURST_MEGA_P)
-    #define  DEFAULT_Kp 15.94
-    #define  DEFAULT_Ki  1.17
-    #define  DEFAULT_Kd 54.19
+    #define  DEFAULT_Kp 18.27
+    #define  DEFAULT_Ki  1.26
+    #define  DEFAULT_Kd 66.23
   #endif
 
   #if ENABLED(KNUTWURST_MEGA_X)
@@ -1047,13 +1047,8 @@
   #define E0_DRIVER_TYPE TMC2208_STANDALONE
   #define E1_DRIVER_TYPE TMC2208_STANDALONE
 #else
-  #if ENABLED(KNUTWURST_MEGA_P)
-    #define X_DRIVER_TYPE  TMC2208_STANDALONE
-    #define Y_DRIVER_TYPE  TMC2208_STANDALONE
-  #else
-    #define X_DRIVER_TYPE  A4988
-    #define Y_DRIVER_TYPE  A4988
-  #endif
+  #define X_DRIVER_TYPE  A4988
+  #define Y_DRIVER_TYPE  A4988
   #define Z_DRIVER_TYPE  A4988
   #define E0_DRIVER_TYPE A4988
   #define E1_DRIVER_TYPE A4988
@@ -1136,38 +1131,38 @@
  */
 #if ENABLED(KNUTWURST_MEGA)
   #if ENABLED(KNUTWURST_BMG)
-    #define DEFAULT_MAX_FEEDRATE          { 500, 500, 6, 30 }
+    #define DEFAULT_MAX_FEEDRATE          { 500, 500, 6, 40 }
   #else
     #define DEFAULT_MAX_FEEDRATE          { 500, 500, 6, 80 }
   #endif
 #endif
 
 #if ENABLED(KNUTWURST_MEGA_S)
-  #define DEFAULT_MAX_FEEDRATE          { 500, 500, 6, 30 } // same feedrate for BMG
+  #define DEFAULT_MAX_FEEDRATE          { 500, 500, 6, 40 } // same feedrate for BMG
 #endif
 
 #if ENABLED(KNUTWURST_MEGA_X)
   #if ENABLED(KNUTWURST_BMG)
-    #define DEFAULT_MAX_FEEDRATE            { 120, 120, 12, 30 } // correct for BMG?
+    #define DEFAULT_MAX_FEEDRATE            { 120, 120, 12, 40 } // correct for BMG?
   #else
-    #define DEFAULT_MAX_FEEDRATE            { 120, 120, 12, 80 } // thanks to Simon Geis
+    #define DEFAULT_MAX_FEEDRATE            { 120, 120, 12, 60 } // thanks to Simon Geis
   #endif
 #endif
 
 #if ENABLED(KNUTWURST_MEGA_P)
-  #define DEFAULT_MAX_FEEDRATE          { 500, 500, 6, 30 }
+  #define DEFAULT_MAX_FEEDRATE          { 500, 500, 6, 40 }
 #endif
 
 #if ENABLED(KNUTWURST_CHIRON)
   #if ENABLED(KNUTWURST_BMG)
-    #define DEFAULT_MAX_FEEDRATE          { 100, 100, 20, 30 }
+    #define DEFAULT_MAX_FEEDRATE          { 100, 100, 20, 40 }
   #else
-    #define DEFAULT_MAX_FEEDRATE          { 100, 100, 20, 80 }
+    #define DEFAULT_MAX_FEEDRATE          { 100, 100, 20, 60 }
   #endif
 #endif
 
 #if ENABLED(KNUTWURST_4MAXP2)
-  #define DEFAULT_MAX_FEEDRATE          { 150, 150, 18, 30 }
+  #define DEFAULT_MAX_FEEDRATE          { 150, 150, 18, 80 }
 #endif
 
 
@@ -3467,20 +3462,20 @@
 // Use software PWM to drive the fan, as for the heaters. This uses a very low frequency
 // which is not as annoying as with the hardware PWM. On the other hand, if this frequency
 // is too low, you should also increment SOFT_PWM_SCALE.
-//#define FAN_SOFT_PWM
+#define FAN_SOFT_PWM
 
 // Incrementing this by 1 will double the software PWM frequency,
 // affecting heaters, and the fan if FAN_SOFT_PWM is enabled.
 // However, control resolution will be halved for each increment;
 // at zero value, there are 128 effective control positions.
 // :[0,1,2,3,4,5,6,7]
-#define SOFT_PWM_SCALE 0
+#define SOFT_PWM_SCALE 5
 
 // If SOFT_PWM_SCALE is set to a value higher than 0, dithering can
 // be used to mitigate the associated resolution loss. If enabled,
 // some of the PWM cycles are stretched so on average the desired
 // duty cycle is attained.
-//#define SOFT_PWM_DITHER
+#define SOFT_PWM_DITHER
 
 // Temperature status LEDs that display the hotend and bed temperature.
 // If all hotends, bed temperature, and target temperature are under 54C
