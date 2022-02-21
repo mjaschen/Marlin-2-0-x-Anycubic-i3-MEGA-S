@@ -696,9 +696,9 @@
                                   // Set/get with gcode: M301 E[extruder number, 0-2]
 
   #if ANY(KNUTWURST_MEGA, KNUTWURST_MEGA_S, KNUTWURST_MEGA_P)
-    #define  DEFAULT_Kp 12.28
-    #define  DEFAULT_Ki  0.75
-    #define  DEFAULT_Kd 50.06
+    #define DEFAULT_Kp 17.67
+    #define DEFAULT_Ki 1.20
+    #define DEFAULT_Kd 65.13
   #endif
 
   #if ENABLED(KNUTWURST_MEGA_X)
