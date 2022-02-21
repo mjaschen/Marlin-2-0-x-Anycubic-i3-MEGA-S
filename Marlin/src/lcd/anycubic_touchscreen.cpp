@@ -237,6 +237,7 @@ void AnycubicTouchscreenClass::Setup() {
 
   #if ENABLED(ANYCUBIC_FILAMENT_RUNOUT_SENSOR)
     if ((READ(FILAMENT_RUNOUT_PIN) == true) && FilamentSensorEnabled) {
+
       #ifndef ANYCUBIC_TFT_DEBUG
         HARDWARE_SERIAL_PROTOCOLPGM("J15"); //J15 FILAMENT LACK
         HARDWARE_SERIAL_ENTER();
@@ -496,15 +497,15 @@ void AnycubicTouchscreenClass::PausePrint() {
 
 inline void AnycubicTouchscreenClass::StopPrint()
 {
-  card.abortFilePrintNow();
-
-  #ifdef ANYCUBIC_TFT_DEBUG
-    SERIAL_ECHOLNPGM("DEBUG: Stopped and cleared");
-  #endif
+  card.abortFilePrintSoon();
 
   print_job_timer.stop();
   thermalManager.disable_all_heaters();
   thermalManager.zero_fan_speeds();
+  
+  #ifdef ANYCUBIC_TFT_DEBUG
+    SERIAL_ECHOLNPGM("DEBUG: Stopped and cleared");
+  #endif
 
   ai3m_pause_state = 0;
   #ifdef ANYCUBIC_TFT_DEBUG
@@ -586,21 +587,10 @@ void AnycubicTouchscreenClass::ReheatNozzle() {
 }
 
 void AnycubicTouchscreenClass::ParkAfterStop(){
-  // only park the nozzle if homing was done before
-  if (!homing_needed_error()) {
-    // raize nozzle by 25mm respecting Z_MAX_POS
-    do_blocking_move_to_z(_MIN(current_position[Z_AXIS] + 25, Z_MAX_POS), 5);
-    #ifdef ANYCUBIC_TFT_DEBUG
-      SERIAL_ECHOLNPGM("DEBUG: SDSTOP: Park Z");
-    #endif
-    // move bed and hotend to park position
-    do_blocking_move_to_xy((X_MIN_POS + 10), (Y_MAX_POS - 10), 100);
-    #ifdef ANYCUBIC_TFT_DEBUG
-      SERIAL_ECHOLNPGM("DEBUG: SDSTOP: Park XY");
-    #endif
-  }
+
   queue.enqueue_now_P(PSTR("M84")); // disable stepper motors
   queue.enqueue_now_P(PSTR("M27")); // force report of SD status
+
   ai3m_pause_state = 0;
   #ifdef ANYCUBIC_TFT_DEBUG
     SERIAL_ECHOPGM("DEBUG: AI3M Pause State: ", ai3m_pause_state);
@@ -739,7 +729,7 @@ void AnycubicTouchscreenClass::HandleSpecialMenu() {
     else if ((strcasestr_P(currentTouchscreenSelection, PSTR(SM_BLTOUCH_L)) != NULL)
           || (strcasestr_P(currentTouchscreenSelection, PSTR(SM_BLTOUCH_S)) != NULL)) {
       SERIAL_ECHOLNPGM("Special Menu: BLTouch Leveling");
-      queue.inject_P(PSTR("G28\nG29\nM500\nG90\nM300 S440 P200\nM300 S660 P250\nM300 S880 P300\nG1 Z30 F4000\nG1 X0 F4000\nG91\nM84"));
+      queue.inject_P(PSTR("G28\nG29\nM500\nG90\nM300 S440 P200\nM300 S660 P250\nM300 S880 P300\nG1 Z30 F4000\nG1 X0 F4000\nG91\nM84\nM420 S1"));
       buzzer.tone(105, 1108);
       buzzer.tone(210, 1661);
     }
@@ -860,7 +850,7 @@ void AnycubicTouchscreenClass::HandleSpecialMenu() {
         || (strcasestr_P(currentTouchscreenSelection, PSTR(SM_EZLVL_MENU_S)) != NULL)) {
     SERIAL_ECHOLNPGM("Special Menu: Enter Easy Level Menu");
     LevelMenu = true;
-    queue.inject_P(PSTR("G28\nG90\nG1 Z5\nG1 X15 Y15 F4000\nG1 Z0"));
+    queue.inject_P(PSTR("G28\nM420 S0\nG90\nG1 Z5\nG1 X15 Y15 F4000\nG1 Z0"));
   }
   else if ((strcasestr_P(currentTouchscreenSelection, PSTR(SM_EZLVL_P1_L)) != NULL)
         || (strcasestr_P(currentTouchscreenSelection, PSTR(SM_EZLVL_P1_S)) != NULL)) {
@@ -928,7 +918,7 @@ void AnycubicTouchscreenClass::HandleSpecialMenu() {
         || (strcasestr_P(currentTouchscreenSelection, PSTR(SM_EZLVL_EXIT_S)) != NULL)) {
     SERIAL_ECHOLNPGM("Special Menu: Exit Easy Level Menu");
     LevelMenu = false;
-    queue.inject_P(PSTR("G90\nG1 Z10\nG1 X15 Y15 F4000"));
+    queue.inject_P(PSTR("G90\nG1 Z10\nG1 X15 Y15 F4000\nM420 S1"));
   }
 #endif
 }
@@ -1175,17 +1165,22 @@ void AnycubicTouchscreenClass::PrintList() {
       else {
         card.selectFileByIndex(count - 1);
 
-        // Bugfix for non-printable special characters
-        // which are now replaced by underscores.
         int fileNameLen = strlen(card.longFilename);
+        bool fileNameWasCut = false;
 
         // Cut off too long filenames.
-        // They don't fit on the screen anyways.
-        //if (fileNameLen > MAX_PRINTABLE_FILENAME_LEN)
-        //  fileNameLen = MAX_PRINTABLE_FILENAME_LEN;
+        // They don't fit on the screen anyway.
+        #if ENABLED(KNUTWURST_DGUS2_TFT)
+          if (fileNameLen >= MAX_PRINTABLE_FILENAME_LEN) {
+            fileNameWasCut = true;
+            fileNameLen = MAX_PRINTABLE_FILENAME_LEN;
+          } 
+        #endif
 
         char outputString[fileNameLen];
 
+        // Bugfix for non-printable special characters
+        // which are now replaced by underscores.
         for (unsigned char i = 0; i <= fileNameLen; i++) {
           if (i >= fileNameLen) {
             outputString[i] = ' ';
@@ -1198,6 +1193,17 @@ void AnycubicTouchscreenClass::PrintList() {
           }
         }
 
+        // I know, it's ugly, but it's faster than a string lib
+        if(fileNameWasCut) {
+            outputString[fileNameLen-7] = '~';
+            outputString[fileNameLen-6] = '.';
+            outputString[fileNameLen-5] = 'g';
+            outputString[fileNameLen-4] = 'c';
+            outputString[fileNameLen-3] = 'o';
+            outputString[fileNameLen-2] = 'd';
+            outputString[fileNameLen-1] = 'e';
+        }
+
         outputString[fileNameLen] = '\0';
 
         if (card.flag.filenameIsDir) {
@@ -1208,20 +1214,16 @@ void AnycubicTouchscreenClass::PrintList() {
             HARDWARE_SERIAL_PROTOCOLPGM("/");
             HARDWARE_SERIAL_PROTOCOL(outputString);
             HARDWARE_SERIAL_PROTOCOLLNPGM(".gcode");
-            SERIAL_ECHO(count);
-            SERIAL_ECHOPGM(": /");
-            SERIAL_ECHOLN(outputString);
           #else
             HARDWARE_SERIAL_PROTOCOL("/");
             HARDWARE_SERIAL_PROTOCOLLN(card.filename);
             HARDWARE_SERIAL_PROTOCOL("/");
             HARDWARE_SERIAL_PROTOCOLLN(outputString);
-            SERIAL_ECHO(count);
-            SERIAL_ECHOPGM(": /");
-            SERIAL_ECHOLN(outputString);
           #endif
-        }
-        else {
+          SERIAL_ECHO(count);
+          SERIAL_ECHOPGM(": /");
+          SERIAL_ECHOLN(outputString);
+        } else {
           HARDWARE_SERIAL_PROTOCOLLN(card.filename);
           HARDWARE_SERIAL_PROTOCOLLN(outputString);
           SERIAL_ECHO(count);
@@ -1366,7 +1368,6 @@ void AnycubicTouchscreenClass::StateHandler() {
         HARDWARE_SERIAL_PROTOCOLPGM("J16"); // J16 stop print
         HARDWARE_SERIAL_ENTER();
         if ((!card.isPrinting()) && (!planner.movesplanned())) {
-          queue.clear();
           TFTstate = ANYCUBIC_TFT_STATE_IDLE;
           #ifdef SDSUPPORT
              HARDWARE_SERIAL_PROTOCOLPGM("J16"); // J16 stop print
@@ -1393,6 +1394,15 @@ void AnycubicTouchscreenClass::StateHandler() {
       break;
   }
 }
+
+
+/*
+ * TODO: Refactoring of the filamentsensor-Stuff.
+ * 
+ * Every cycle a timer should be reset if the sensor reads "filament is present"
+ * If the timer is not reset within a period of time, the filament runout state
+ * should be triggered.
+ */
 
 void AnycubicTouchscreenClass::FilamentRunout() {
   if (FilamentSensorEnabled == true) {
@@ -2135,6 +2145,11 @@ void AnycubicTouchscreenClass::GetCommandFromTFT() {
             #endif
 
             #if ENABLED(KNUTWURST_4MAXP2)
+            case 40:
+                HARDWARE_SERIAL_PROTOCOLPGM("J17"); // J17 Main board reset
+                HARDWARE_SERIAL_ENTER();
+                delay(10);
+                break;
             case 41:
                 if(CodeSeen('O')) {
                   PrintdoneAndPowerOFF = true;
@@ -2264,6 +2279,9 @@ void AnycubicTouchscreenClass::GetCommandFromTFT() {
                     WRITE(HEATER_0_PIN, 0);
                   }
                   break;
+            #endif
+            
+            #if ENABLED(KNUTWURST_MEGA_P)
                 case 51:
                   if (CodeSeen('H')) {
                     queue.enqueue_now_P(PSTR("G1 Z5 F500"));
@@ -2288,11 +2306,11 @@ void AnycubicTouchscreenClass::GetCommandFromTFT() {
                   else if (CodeSeen('L')) {
                     queue.enqueue_now_P(PSTR("G1 X100 Y100  Z50 F5000"));
                   }
-                }
-                break;
+                  break;
             #endif
-            default:
-              break;
+            
+          default:
+          break;
           }
         }
         TFTbufindw = (TFTbufindw + 1)%TFTBUFSIZE;
