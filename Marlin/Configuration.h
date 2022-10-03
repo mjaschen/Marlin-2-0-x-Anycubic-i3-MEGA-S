@@ -755,9 +755,12 @@
   //#define PID_BED_DEBUG // Sends debug data to the serial port.
 
   #if ANY(KNUTWURST_MEGA, KNUTWURST_MEGA_S, KNUTWURST_MEGA_P)
-    #define DEFAULT_bedKp 251.78
-    #define DEFAULT_bedKi  49.57
-    #define DEFAULT_bedKd 319.73
+    #define DEFAULT_bedKp 148.68
+    #define DEFAULT_bedKi 23.27
+    #define DEFAULT_bedKd 633.33
+    // #define DEFAULT_bedKp 251.78
+    // #define DEFAULT_bedKi  49.57
+    // #define DEFAULT_bedKd 319.73
   #endif
 
   #if ENABLED(KNUTWURST_MEGA_X)
