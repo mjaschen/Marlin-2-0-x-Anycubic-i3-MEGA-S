@@ -16,7 +16,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
 #pragma once
@@ -38,60 +38,97 @@
 #endif
 
 //
-// Custom Limit Switches
+// PWM FETS
+//
+#define MOSFET_B_PIN                          45  // HEATER1
+
+//
+// Heaters / Fans
+//
+#define FAN_PIN                                9  // FAN0
+#define FAN1_PIN                               7  // FAN1
+#define FAN2_PIN                              44  // FAN2
+#ifndef E0_AUTO_FAN_PIN
+  #define E0_AUTO_FAN_PIN               FAN2_PIN
+#endif
+
+//
+// AnyCubic pin mappings
+//
+// Define the appropriate mapping option in Configuration.h:
+// - TRIGORILLA_MAPPING_CHIRON
+// - TRIGORILLA_MAPPING_I3MEGA
+//
+
+//
+// Limit Switches
 //
 //#define ANYCUBIC_4_MAX_PRO_ENDSTOPS
 #if ENABLED(ANYCUBIC_4_MAX_PRO_ENDSTOPS)
   #define X_MAX_PIN                           43
-  #define Y_MIN_PIN                           19
-#endif
+  #define Y_STOP_PIN                          19
 
-// Labeled pins
-#define TG_HEATER_BED_PIN                      8
-#define TG_HEATER_0_PIN                       10
-#define TG_HEATER_1_PIN                       45  // Anycubic Kossel: Unused
+  #define CONTROLLER_FAN_PIN            FAN1_PIN // PATCH: knutwurst
+#elif EITHER(TRIGORILLA_MAPPING_CHIRON, TRIGORILLA_MAPPING_I3MEGA)
+  // Chiron uses AUX header for Y and Z endstops
+  #define Y_STOP_PIN                          42  // AUX
+  #define Z_STOP_PIN                          43  // AUX
+  #define Z2_MIN_PIN                          18  // Z-
 
-#define TG_FAN0_PIN                            9  // Anycubic Kossel: Usually the part cooling fan
-#define TG_FAN1_PIN                            7  // Anycubic Kossel: Unused
-#define TG_FAN2_PIN                           44  // Anycubic Kossel: Hotend fan
-#define CONTROLLER_FAN_PIN  		              TG_FAN1_PIN
-#define FIL_RUNOUT_PIN                        19
-#define BEEPER_PIN                            31
-#define SDSS                                  53
-#define LED_PIN                               13
-#define SD_DETECT_PIN                         49
-// Remap MOSFET pins to common usages:
-
-#define RAMPS_D10_PIN            TG_HEATER_0_PIN  // HEATER_0_PIN is always RAMPS_D10_PIN in pins_RAMPS.h
-
-#if HOTENDS > 1                                   // EEF and EEB
-  #define RAMPS_D9_PIN           TG_HEATER_1_PIN
-  #if !TEMP_SENSOR_BED
-    // EEF
-    #define RAMPS_D8_PIN             TG_FAN0_PIN
-  #else
-    // EEB
-    #define RAMPS_D8_PIN       TG_HEATER_BED_PIN
-    #define FAN_PIN                  TG_FAN0_PIN  // Override pin 4 in pins_RAMPS.h
+  #ifndef Z_MIN_PROBE_PIN
+    #define Z_MIN_PROBE_PIN                    2
   #endif
-#elif TEMP_SENSOR_BED
-  // EFB (Anycubic Kossel default)
-  #define RAMPS_D9_PIN               TG_FAN0_PIN
-  #define RAMPS_D8_PIN         TG_HEATER_BED_PIN
-#else
-  // EFF
-  #define RAMPS_D9_PIN               TG_FAN1_PIN
-  #define RAMPS_D8_PIN               TG_FAN0_PIN
+
+  #define CONTROLLER_FAN_PIN            FAN1_PIN
+
+  #if ENABLED(POWER_LOSS_RECOVERY)
+    #define OUTAGETEST_PIN                    79
+    #define OUTAGECON_PIN                     58
+  #endif
+
+  #if ENABLED(TRIGORILLA_MAPPING_CHIRON)
+    #ifndef FIL_RUNOUT_PIN
+      #define FIL_RUNOUT_PIN                  33
+    #endif
+    #define HEATER_BED_PIN          MOSFET_B_PIN  // HEATER1
+  #else
+    #ifndef FIL_RUNOUT_PIN
+      #define FIL_RUNOUT_PIN                  19
+    #endif
+  #endif
+
+  #if EITHER(TRIGORILLA_MAPPING_CHIRON, SWAP_Z_MOTORS)
+    // Chiron and some Anycubic i3 MEGAs swap Z steppers
+    #define Z_STEP_PIN                        36
+    #define Z_DIR_PIN                         34
+    #define Z_ENABLE_PIN                      30
+    #define Z_CS_PIN                          44
+
+    #define Z2_STEP_PIN                       46
+    #define Z2_DIR_PIN                        48
+    #define Z2_ENABLE_PIN                     62
+    #define Z2_CS_PIN                         40
+  #endif
 #endif
 
-#if HOTENDS > 1 || TEMP_SENSOR_BED                // EEF, EEB, EFB
-  #define FAN1_PIN                   TG_FAN1_PIN
+#if ANY(ANYCUBIC_LCD_CHIRON, ANYCUBIC_LCD_I3MEGA, ANYCUBIC_TOUCHSCREEN) // PATCH: knutwurst
+  #define BEEPER_PIN                          31
+  #define SD_DETECT_PIN                       49
 #endif
-#define FAN2_PIN                TG_FAN2_PIN
 
-#ifdef POWER_OUTAGE_TEST
-  #define OUTAGETEST_PIN       79
-  #define OUTAGECON_PIN        58
+#if HAS_TMC_UART
+  #ifndef X_SERIAL_TX_PIN
+    #define X_SERIAL_TX_PIN           SERVO1_PIN
+  #endif
+  #ifndef Y_SERIAL_TX_PIN
+    #define Y_SERIAL_TX_PIN           SERVO0_PIN
+  #endif
+  #ifndef Z_SERIAL_TX_PIN
+    #define Z_SERIAL_TX_PIN           SERVO3_PIN
+  #endif
+  #ifndef E0_SERIAL_TX_PIN
+    #define E0_SERIAL_TX_PIN          SERVO2_PIN
+  #endif
 #endif
 
 #include "pins_RAMPS.h"
@@ -100,17 +137,17 @@
 // AnyCubic made the following changes to 1.1.0-RC8
 // If these are appropriate for your LCD let us know.
 //
-#if 0 && HAS_SPI_LCD
+#if 0 && HAS_WIRED_LCD
 
   // LCD Display output pins
-  #if BOTH(NEWPANEL, PANEL_ONE)
+  #if BOTH(IS_NEWPANEL, PANEL_ONE)
     #undef LCD_PINS_D6
     #define LCD_PINS_D6                       57
   #endif
 
   // LCD Display input pins
-  #if ENABLED(NEWPANEL)
-    #if ANY(VIKI2, miniVIKI)
+  #if IS_NEWPANEL
+    #if EITHER(VIKI2, miniVIKI)
       #undef DOGLCD_A0
       #define DOGLCD_A0                       23
     #elif ENABLED(ELB_FULL_GRAPHIC_CONTROLLER)
@@ -126,4 +163,4 @@
     #define DOGLCD_A0                         42
   #endif
 
-#endif // HAS_SPI_LCD
+#endif // HAS_WIRED_LCD
